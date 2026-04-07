@@ -4,33 +4,36 @@ import altair as alt
 
 from motor import calcular_generacion
 
+st.set_page_config(layout="wide")
+
 MESES_CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",]
 LATITUD_INICIAL = -31.6475
 LONGITUD_INICIAL = -60.6985
 RESULTADOS_KEY = "resultados"
-CIUDADES_SANTA_FE = {
-    "Santa Fe": {"lat": LATITUD_INICIAL, "lon": LONGITUD_INICIAL},
-    "Rosario": {"lat": -32.9442, "lon": -60.6505},
-    "Rafaela": {"lat": -31.2503, "lon": -61.4867},
-    "Reconquista": {"lat": -29.1443, "lon": -59.6583},
-    "Venado Tuerto": {"lat": -33.7456, "lon": -61.9688},
-    "Santo Tome": {"lat": -31.6627, "lon": -60.7653},
-    "Esperanza": {"lat": -31.4488, "lon": -60.9317},
-    "Avellaneda": {"lat": -29.1176, "lon": -59.6580},
-    "Villa Gobernador Galvez": {"lat": -33.0302, "lon": -60.6404},
-    "San Lorenzo": {"lat": -32.7441, "lon": -60.7363},
-    "Casilda": {"lat": -33.0442, "lon": -61.1681},
-    "San Jorge": {"lat": -31.8962, "lon": -61.8598},
-    "Ceres": {"lat": -29.8810, "lon": -61.9450},
-    "Tostado": {"lat": -29.2320, "lon": -61.7697},
-    "San Javier": {"lat": -30.5777, "lon": -59.9317},
-    "Coronda": {"lat": -31.9726, "lon": -60.9198},
-    "Firmat": {"lat": -33.4590, "lon": -61.4832},
-    "Galvez": {"lat": -32.0307, "lon": -61.2210},
-    "Laguna Paiva": {"lat": -31.3039, "lon": -60.6581},
-    "Sunchales": {"lat": -30.9446, "lon": -61.5615},
-}
-OPCIONES_UBICACION = ["Manual", *CIUDADES_SANTA_FE.keys()]
+ARCHIVO_CIUDADES = "ciudades_con_coordenadas.csv"
+
+
+@st.cache_data
+def cargar_ciudades():
+    df_ciudades = pd.read_csv(ARCHIVO_CIUDADES, encoding="utf-8")
+    df_ciudades = df_ciudades.rename(columns={
+        "Columna 1": "ciudad",
+        "Latitud": "lat",
+        "Longitud": "lon",
+    })
+    df_ciudades["ciudad"] = df_ciudades["ciudad"].astype(str).str.strip()
+    df_ciudades["lat"] = df_ciudades["lat"].astype(float)
+    df_ciudades["lon"] = df_ciudades["lon"].astype(float)
+    df_ciudades = df_ciudades.dropna(subset=["ciudad", "lat", "lon"])
+    df_ciudades = df_ciudades.sort_values("ciudad", kind="stable").reset_index(drop=True)
+
+    ciudades = {
+        fila["ciudad"]: {"lat": fila["lat"], "lon": fila["lon"]}
+        for _, fila in df_ciudades.iterrows()
+    }
+    opciones = ["Manual", *ciudades.keys()]
+
+    return ciudades, opciones
 
 def inicializar_estado():
     if "lat" not in st.session_state:
@@ -50,8 +53,7 @@ def actualizar_coordenadas(latitud, longitud):
 
 
 inicializar_estado()
-
-st.set_page_config(layout="wide")
+CIUDADES_SANTA_FE, OPCIONES_UBICACION = cargar_ciudades()
 
 st.title("Simulador de Energia Fotovoltaica ☀️")
 
@@ -89,7 +91,7 @@ if calcular:
         resultados = calcular_generacion(inputs)
         st.session_state[RESULTADOS_KEY] = resultados
         st.session_state.vista_activa = "resultados"
-        st.session_state.mensaje_exito = "Simulacion calculada correctamente."
+        
         st.rerun()
     except ValueError as error:
         st.error(str(error))
