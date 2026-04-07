@@ -1,7 +1,17 @@
-import pandas as pd
-import numpy as np
+from pathlib import Path
 
-dataset = pd.read_parquet("dataset_solar_santa_fe_LOCAL.parquet")
+import numpy as np
+import pandas as pd
+
+BASE_DIR = Path(__file__).resolve().parent
+DATASET_PATH = BASE_DIR / "dataset_solar_santa_fe_LOCAL.parquet"
+
+if not DATASET_PATH.exists():
+    raise FileNotFoundError(
+        f"No se encontro el dataset requerido: {DATASET_PATH}"
+    )
+
+dataset = pd.read_parquet(DATASET_PATH)
 
 def calcular_generacion(inputs):
 

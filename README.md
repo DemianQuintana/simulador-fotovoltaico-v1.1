@@ -19,3 +19,11 @@ streamlit run web.py
 ## Despliegue
 
 El archivo de entrada para Streamlit es `web.py`.
+
+## Desplegar en Streamlit Community Cloud
+
+1. Inicia sesion en Streamlit Community Cloud con tu cuenta de GitHub.
+2. Crea una nueva app desde el repositorio `DemianQuintana/simulador-fotovoltaico-v1.1`.
+3. Selecciona la rama `main`.
+4. Indica `web.py` como archivo principal.
+5. Streamlit instalara las dependencias desde `requirements.txt` y descargara el `.parquet` versionado con Git LFS al clonar el repositorio.

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import streamlit as st
 import pandas as pd
 import altair as alt
@@ -10,11 +12,17 @@ MESES_CORTOS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "
 LATITUD_INICIAL = -31.6475
 LONGITUD_INICIAL = -60.6985
 RESULTADOS_KEY = "resultados"
-ARCHIVO_CIUDADES = "ciudades_con_coordenadas.csv"
+BASE_DIR = Path(__file__).resolve().parent
+ARCHIVO_CIUDADES = BASE_DIR / "ciudades_con_coordenadas.csv"
 
 
 @st.cache_data
 def cargar_ciudades():
+    if not ARCHIVO_CIUDADES.exists():
+        raise FileNotFoundError(
+            f"No se encontro el archivo de ciudades: {ARCHIVO_CIUDADES}"
+        )
+
     df_ciudades = pd.read_csv(ARCHIVO_CIUDADES, encoding="utf-8")
     df_ciudades = df_ciudades.rename(columns={
         "Columna 1": "ciudad",
