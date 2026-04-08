@@ -69,11 +69,14 @@ with st.sidebar:
     st.title("📋Datos del sistema")
     potAC = st.number_input("Potencia del inversor (kW)", min_value=0.0, step=0.1)
     potDC = st.number_input("Potencia total de los paneles (kW)", min_value=0.0, step=0.05)
-    betha = st.number_input("Inclinacion de los paneles (grados)", min_value=30, max_value=90, step=1)
+    betha = st.number_input("Inclinacion de los paneles (grados)", value=30,min_value=0, max_value=90, step=1)
     azimuth = st.number_input("Azimuth (grados)", min_value=0, max_value=360, step=1)
-    tipoPanel = st.selectbox("Tipo de panel", ("Estandar", "Premium"))
-    perdidas = st.number_input("Perdidas del sistema (%)", value=14.08, min_value=10.0, max_value=30.0, step=0.1)
     calcular = st.button("Calcular", use_container_width=True)
+    with st.expander("⚙️Avanzado", expanded=False):
+        tipoPanel = st.selectbox("Tipo de panel", ("Estandar", "Premium"))
+        tipoMontaje = st.selectbox("Tipo de montaje", ("En techo", "En campo"))
+        eficienciaInversor = st.number_input("Eficiencia del inversor (%)", value=96.0, min_value=90.0, max_value=99.5, step=0.1)
+        perdidas = st.number_input("Perdidas del sistema (%)", value=14.08, min_value=5.0, max_value=30.0, step=0.1)
 
 col_vista_1, col_vista_2 = st.columns(2)
 with col_vista_1:
@@ -92,6 +95,8 @@ if calcular:
         "pot_dc": potDC,
         "pot_ac": potAC,
         "tipo_panel": tipoPanel,
+        "tipo_montaje": tipoMontaje,
+        "eficiencia_inversor": eficienciaInversor,
         "perdidas": perdidas
     }
 
@@ -108,7 +113,7 @@ if st.session_state.vista_activa == "ubicacion":
     col_ciudad, col_lat, col_lon = st.columns([2.4, 1, 1])
     with col_ciudad:
         ciudad = st.selectbox(
-            "Ciudad de Santa Fe",
+            "Localidad",
             options=OPCIONES_UBICACION,
             key="ciudad_seleccionada"
         )

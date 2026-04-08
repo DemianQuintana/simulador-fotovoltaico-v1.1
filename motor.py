@@ -22,7 +22,9 @@ def calcular_generacion(inputs):
     pot_dc = inputs["pot_dc"]
     pot_ac = inputs["pot_ac"]
     tipo_panel = inputs["tipo_panel"]
+    tipo_montaje = inputs["tipo_montaje"]
     perdidas = inputs["perdidas"]
+    eficiencia_inversor = inputs["eficiencia_inversor"]
 
     if pot_ac <= 0:
         raise ValueError("La potencia AC del inversor debe ser mayor a 0")
@@ -32,19 +34,32 @@ def calcular_generacion(inputs):
         raise ValueError("La inclinacion de los paneles debe estar entre 0 y 90 grados")
     if not 0 <= perdidas <= 100:
         raise ValueError("Las perdidas deben estar entre 0 y 100")
+    if not 0 < eficiencia_inversor <= 100:
+        raise ValueError("La eficiencia del inversor debe estar entre 0 y 100")
+
+    if tipo_montaje == "En techo":
+        u0 = 23
+        u1 = 4
+        albedo = 0.18
+    else:
+        u0 = 27
+        u1 = 6
+        albedo = 0.22
 
     lat_cercana, lon_cercana = obtener_coordenadas(lat, lon, dataset)
     df_punto = obtener_datos_punto(lat_cercana, lon_cercana, dataset)
 
     df_punto = calcular_aoi(df_punto, betha, azimuth)
     df_punto = calcular_factores_perez(df_punto)
-    df_punto = calcular_poa(df_punto, betha)
+    df_punto = calcular_poa(df_punto, betha, albedo=albedo)
     df_punto = calcular_perdidas_vidrio(df_punto, tipo_panel)
-    df_punto = calcular_temperatura_y_potencia_dc(df_punto, pot_dc, tipo_panel)
-    df_punto = calcular_potencia_ac(df_punto, pot_ac)
+    df_punto = calcular_temperatura_y_potencia_dc(df_punto, pot_dc, tipo_panel, u0=u0, u1=u1)
+    df_punto["P_DC_bruta"] = df_punto["P_DC"]
 
     if perdidas > 0:
-        df_punto["P_AC"] = df_punto["P_AC"] * (1 - perdidas / 100)
+        df_punto["P_DC"] = df_punto["P_DC"] * (1 - perdidas / 100)
+
+    df_punto = calcular_potencia_ac(df_punto, pot_ac, pot_dc, eta_nom=eficiencia_inversor / 100)
 
     df_punto["energia_horaria"] = df_punto["P_AC"]
     energia_mensual = df_punto.groupby("mes")["energia_horaria"].sum()
@@ -300,14 +315,17 @@ def calcular_temperatura_y_potencia_dc(df_punto, pdc0, tipo_panel, u0=25, u1=6, 
 
     return df
 
-def calcular_potencia_ac(df_punto, p_inv, eta_nom=0.96, eta_ref=0.9637):
+def calcular_potencia_ac(df_punto, p_inv, pdc0, eta_nom=0.96, eta_ref=0.9637):
     df = df_punto.copy()
 
     p_dc = df["P_DC"].astype(float)
+    p_dc_bruta = df.get("P_DC_bruta", df["P_DC"]).astype(float)
     if p_inv <= 0:
         raise ValueError("La potencia nominal del inversor debe ser mayor a 0")
+    if pdc0 <= 0:
+        raise ValueError("La potencia nominal DC debe ser mayor a 0")
 
-    ratio = p_dc / p_inv
+    ratio = p_dc_bruta / pdc0
     ratio_seguro = ratio.replace(0, np.nan)
 
     df["ratio"] = ratio
